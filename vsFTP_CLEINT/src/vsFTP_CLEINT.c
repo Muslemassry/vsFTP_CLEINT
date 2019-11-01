@@ -13,9 +13,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include<sys/stat.h>
-#include<sys/sendfile.h>
-#include<fcntl.h>
+#include <sys/stat.h>
+#include <sys/sendfile.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 
@@ -26,10 +26,21 @@ int char_strlen(const char *str);
 void get_formatted_data_connection_info (const char *str, char *ip, int *port_one, int *port_two);
 
 int main(void) {
-//	char *ip = "172.0.0.1";
+	char *ip = "127.0.0.1";
 	int port = 21;
-//	char *username = "USER ftpuser";
-//	char *password = "PASS ssssss";
+	char ip_usr_str[17];
+	char username_str[256];
+	char password_str[1024];
+
+	/*printf("Enter the IP for the FTP server:\n");
+	scanf("%s", &ip_usr_str);
+	printf("Enter the PORT for the FTP server:\n");
+	scanf("%d", &port);
+	printf("Enter the username:\n");
+	scanf("%s", &username_str);
+	printf("Enter the password:\n");
+	scanf("%s", &password_str);*/
+
 	char *buffer = (char*)malloc(1024);
 	memset(buffer, '\0', 1024);
 
@@ -40,8 +51,7 @@ int main(void) {
 	}
 
 	struct sockaddr_in server_address;
-//	inet_pton(AF_INET, ip, &(server_address.sin_addr));
-	server_address.sin_addr.s_addr = 0;
+	inet_aton(ip, &server_address.sin_addr);
 	server_address.sin_port = htons(port);
 	server_address.sin_family = AF_INET;
 	memset(&(server_address.sin_zero), '\0', 8);
