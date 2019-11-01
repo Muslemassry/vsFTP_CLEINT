@@ -21,18 +21,19 @@
 
 void print_returned_values(int *recv_length, char *buffer);
 void print_fatal_msg(char *msg);
-void send_command_print_resonse(int socket_server, char *command, char* buffer);
+void send_command_print_resonse(int socket_server, char *command, char* buffer, int exit_upon_fail);
 int char_strlen(const char *str);
 void get_formatted_data_connection_info (const char *str, char *ip, int *port_one, int *port_two);
+void fill_char_pointer_with_arr (char* pntr, int start, char* arr, int with_terminator);
 
-int main(void) {
-	char *ip = "127.0.0.1";
-	int port = 21;
-	char ip_usr_str[17];
+int main(int argc, char *argv[]) {
+	char *ip;
+	int port;
+
+	/*char ip_usr_str[17];
 	char username_str[256];
 	char password_str[1024];
-
-	/*printf("Enter the IP for the FTP server:\n");
+	printf("Enter the IP for the FTP server:\n");
 	scanf("%s", &ip_usr_str);
 	printf("Enter the PORT for the FTP server:\n");
 	scanf("%d", &port);
@@ -41,13 +42,36 @@ int main(void) {
 	printf("Enter the password:\n");
 	scanf("%s", &password_str);*/
 
-	char *buffer = (char*)malloc(1024);
-	memset(buffer, '\0', 1024);
-
 	int server_socket;
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_socket == -1) {
 		print_fatal_msg("server tcp socket creation has failed");
+	}
+
+	char *buffer = (char*)malloc(1024);
+	memset(buffer, '\0', 1024);
+
+	char *username_command = (char*)malloc(256);
+	fill_char_pointer_with_arr (username_command, 0, "USER ", 0);
+
+	char *pass_command = (char*)malloc(1024);
+	fill_char_pointer_with_arr (pass_command, 0, "PASS ", 0);
+
+	// argc contains 4 arguments
+	// ip
+	// port
+	// username
+	// password
+	if (argc < 4) { // default intialization;
+		ip = "127.0.0.1";
+		port = 21;
+		fill_char_pointer_with_arr (username_command, 5, "ftpuse", 1);
+		fill_char_pointer_with_arr (pass_command, 5, "ssssss", 1);
+	} else {
+		ip = argv[0];
+		port = strtoumax(argv[1], NULL, 10);
+		fill_char_pointer_with_arr (username_command, 5, argv[2], 1);
+		fill_char_pointer_with_arr (pass_command, 5, argv[3], 1);
 	}
 
 	struct sockaddr_in server_address;
@@ -69,14 +93,13 @@ int main(void) {
 	}
 
 	char *command = "ftp localhost 21\r\n";
-	send_command_print_resonse(server_socket, command, buffer);
-	command = "USER ftpuser\r\n";
-	send_command_print_resonse(server_socket, command, buffer);
-	command = "PASS ssssss\r\n";
-	send_command_print_resonse(server_socket, command, buffer);
+	send_command_print_resonse(server_socket, command, buffer, 0);
+
+	send_command_print_resonse(server_socket, username_command, buffer, 0);
+	send_command_print_resonse(server_socket, pass_command, buffer, 1);
 
 	command = "PASV\r\n";
-	send_command_print_resonse(server_socket, command, buffer);
+	send_command_print_resonse(server_socket, command, buffer, 0);
 	printf("the buffer is: %s", buffer);
 	char *ip_str = (char*)malloc(17);
 	memset(ip_str, '\0', 17);
@@ -112,7 +135,7 @@ int main(void) {
 	}
 
 	command = "QUIT\r\n";
-	send_command_print_resonse(server_socket, command, buffer);
+	send_command_print_resonse(server_socket, command, buffer, 0);
 	return 0;
 }
 
@@ -125,14 +148,23 @@ void print_fatal_msg(char *msg) {
     exit(1);
 }
 
-void send_command_print_resonse(int socket_server, char *command, char* buffer) {
+void send_command_print_resonse(int socket_server, char *command, char* buffer, int exit_upon_fail) {
 	send(socket_server, command, char_strlen(command), 0);
 	memset(buffer, '\0', 1024);
 	int recv_length = recv(socket_server, buffer, 1024, 0);
 	if(recv_length == -1) {
 		printf("No returned value\n");
 	} else {
+		if (exit_upon_fail) {
+			char* error = "530 Login incorrect.\r\n";
+			char* returned_buffer = buffer;
+			if (strcmp(error,returned_buffer) == 0) {
+				print_fatal_msg(returned_buffer);
+			}
+		}
+
 		printf("the received length is %d and the buffer is %s\n", recv_length, buffer);
+
 	}
 
 	return;
@@ -196,4 +228,17 @@ void get_formatted_data_connection_info (const char *str, char *ip, int *port_on
 
     *port_one = strtoumax(port_one_str, NULL, 10);
     *port_two = strtoumax(port_two_str, NULL, 10);
+}
+
+void fill_char_pointer_with_arr (char* pntr, int start, char* arr, int with_terminator) {
+	int arr_size = char_strlen(arr);
+	for(int index = 0; index < arr_size; index++) {
+		pntr[start] = arr[index];
+		start = start + 1;
+	}
+
+	if (with_terminator) {
+		pntr[start++] = '\r';
+		pntr[start++] = '\n';
+	}
 }
