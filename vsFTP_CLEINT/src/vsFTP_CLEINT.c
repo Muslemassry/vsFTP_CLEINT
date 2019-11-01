@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 	if (argc < 4) { // default intialization;
 		ip = "127.0.0.1";
 		port = 21;
-		fill_char_pointer_with_arr (username_command, 5, "ftpuse", 1);
+		fill_char_pointer_with_arr (username_command, 5, "ftpuser", 1);
 		fill_char_pointer_with_arr (pass_command, 5, "ssssss", 1);
 	} else {
 		ip = argv[0];
@@ -136,6 +136,10 @@ int main(int argc, char *argv[]) {
 
 	command = "QUIT\r\n";
 	send_command_print_resonse(server_socket, command, buffer, 0);
+	free(buffer);
+	free(username_command);
+	free(pass_command);
+	free(ip_str);
 	return 0;
 }
 
@@ -228,6 +232,8 @@ void get_formatted_data_connection_info (const char *str, char *ip, int *port_on
 
     *port_one = strtoumax(port_one_str, NULL, 10);
     *port_two = strtoumax(port_two_str, NULL, 10);
+    free(port_one_str);
+    free(port_two_str);
 }
 
 void fill_char_pointer_with_arr (char* pntr, int start, char* arr, int with_terminator) {
